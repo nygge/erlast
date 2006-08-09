@@ -1,0 +1,8 @@
+	Ast_man overview page
+
+@author Aners Nygren <anders.nygren@gmail.com>
+@copyright 2006 Anders Nygren
+@version {@vsn}
+@title Welcome to ast_man
+
+@doc Ast_man is an <a href="http://asterisk.org">Asterisk</a> Manager API proxy written in erlang.

@@ -1,0 +1,8 @@
+{application, ast_man,
+ [{description,"Asterisk Manager Interface"},
+  {vsn,"%VSN%"},
+  {modules,[%MODULES%]},
+  {applications,[kernel,stdlib]},
+  {mod, {ast_man_app,[]}},
+  {env,[]}
+ ]}.
