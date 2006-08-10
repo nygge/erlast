@@ -1,13 +1,13 @@
 %%%-------------------------------------------------------------------
 %%% @copyright 2006 Anders Nygren
-%%% File    : ast_ami_pdu.erl
 %%% @author Anders Nygren <anders.nygren@gmail.com>
-%%% @doc 
+%%% @doc Pack and unpack pdus.
 %%% @end 
 %%% Created : 10 Apr 2006 by Anders Nygren <anders.nygren@gmail.com>
 %%%-------------------------------------------------------------------
 -module(ast_ami_pdu).
 
+%% @headerfile "manager_api.hrl"
 -include("manager_api.hrl").
 
 %% API
@@ -18,7 +18,7 @@
 %% API
 %%====================================================================
 %%--------------------------------------------------------------------
-%% @spec make_pdu(Record) -> io_list()
+%% @spec make_pdu(Cmd::ami_cmd()) -> io_list()
 %% @doc Create a binary pdu from a command record.
 %% @end
 %%--------------------------------------------------------------------
@@ -217,6 +217,11 @@ make_pdu(#zap_show_channels{}) ->
 make_record(Pdu) ->
     ok.
 
+%%--------------------------------------------------------------------
+%% @spec parse(Data::string()) -> {[Pdu::pdu()],Cont::string()}
+%% @doc Parse a string() containing 0 or more pdus.
+%% @end
+%%--------------------------------------------------------------------
 parse(Data) ->
     {Pdus,Cont}=parse(Data,[]).
 

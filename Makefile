@@ -20,3 +20,5 @@ conf_clean:
 config/configure: config/configure.in
 	(cd config; autoconf)
 
+docs:
+	(cd lib; $(MAKE) $@)
