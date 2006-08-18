@@ -4,7 +4,7 @@
 %%% @copyright 2006 Anders Nygren
 %%% @version {@vsn}
 %%% @doc Asterisk fast_agi server. 
-%%%
+%%% @end.
 %%% Created : 24 Feb 2006 
 %%%-------------------------------------------------------------------
 %% 
