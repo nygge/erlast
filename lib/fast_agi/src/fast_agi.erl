@@ -46,6 +46,7 @@
 	 get_option/4,
 	 get_variable/2,
 	 hangup/1,
+	 hangup/2,
 	 noop/1,
 	 noop/2,
 	 receive_char/2,
@@ -362,7 +363,7 @@ say_digits(C,Number,Escape) ->
 %% @doc Say number.
 %% @end
 say_number(C,Number) ->
-    say_number(C,integer_to_list(Number),"\"\"").
+    fast_agi_socket:send(C,["SAY NUMBER ",integer_to_list(Number), " \"\" ", "\n"]).
 
 %% @spec say_number(C,Number,Escape) -> Result
 %%    C      = Connection
@@ -373,7 +374,7 @@ say_number(C,Number) ->
 %% @doc Say number.
 %% @end
 say_number(C,Num,Escape) when is_list(Escape)->
-    fast_agi_socket:send(C,["SAY NUMBER ",integer_to_list(Num)," ", Escape, "\n"]).
+    fast_agi_socket:send(C,["SAY NUMBER ",integer_to_list(Num)," \"", Escape, "\" \n"]).
 
 %% @spec say_phonetic(C,String,Escape) -> Result
 %%    C      = Connection

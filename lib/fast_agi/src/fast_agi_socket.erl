@@ -118,5 +118,5 @@ handle_req(C,RPars) ->
     end.
 	
 get_script(Req) ->
-    Script=fast_agi:get_var("agi_network_script",Req),
+    Script=fast_agi:get_var(agi_network_script,Req),
     list_to_tuple([list_to_atom(T) || T<-string:tokens(Script,"/")]).
