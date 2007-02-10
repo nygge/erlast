@@ -70,7 +70,7 @@ init([]) ->
     Server=fast_agi_server,
     S = {Server,{Server,start_link,Pars},
 	 permanent,2000,worker,[Server]},
-    {ok,{{one_for_all,0,1}, [S]}}.
+    {ok,{{one_for_all,10,1}, [S]}}.
 
 %%====================================================================
 %% Internal functions

@@ -98,7 +98,7 @@ create(ServerPid, Pid) ->
 %% @private
 init([Port,Opts]) ->
     process_flag(trap_exit, true),
-    case gen_tcp:listen(Port, Opts++[list, {packet, 0},
+    case gen_tcp:listen(Port, Opts++[list, {packet, line},
 				     {reuseaddr,true},
 				     {active, false}]) of
 	{ok, Listen_socket} ->

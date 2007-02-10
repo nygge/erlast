@@ -48,7 +48,7 @@ start_link(ListenPid, ListenSocket, ListenPort) ->
 %% @doc Send a pdu to the client.
 send(C,Pack) ->
     io:format("sending ~p~n",[Pack]),
-    gen_tcp:send(C#connection.sock,Pack),
+    ok=gen_tcp:send(C#connection.sock,Pack),
     check_result(C).
 
 %%-------------------------------------------------------------------
@@ -87,24 +87,25 @@ check_result(C) ->
 
 request(C, Req) ->
     case gen_tcp:recv(C#connection.sock, 0, 30000) of
-	{ok,Some} ->
-	    case string:str(Some,"\n\n") of
-		0 ->
-		    request(C,Req++Some);
-		_N ->
-		    RPars=parse_req(Req++Some),
-		    handle_req(C,RPars)
-	    end;
-	error ->
-	    io:format("Got error~n",[])
+	{ok,"\n"} ->
+	    handle_req(C,Req);
+	{ok,Line} ->
+	    io:format("Got line = ~p~n",[Line]),
+	    request(C,[parse_line(Line)|Req]);
+	{error,Reason} ->
+	    io:format("Got error = ~p~n",[Reason])
     end.
 
-parse_req(Req) ->
-    [parse_line(L)||L<-string:tokens(Req,"\n")].
+%% parse_req(Req) ->
+%%     [parse_line(L)||L<-string:tokens(Req,"\n")].
 
 parse_line(L) ->
     Par=string:sub_word(L,1,$:),
-    Val=string:strip(string:sub_word(L,2,$:),both),
+    Val=string:strip(
+	  string:strip(
+	    string:sub_word(L,2,$:),
+	    both),
+	  right,$\n),
     {list_to_atom(Par),Val}.
 
 handle_req(C,RPars) ->
@@ -113,7 +114,7 @@ handle_req(C,RPars) ->
     case catch Mod:Fun(RPars,C) of
 	Res ->
 	    io:format("RESULT ~p~n",[Res]),
-	    gen_tcp:close(C#connection.sock,read_write),
+	    gen_tcp:close(C#connection.sock),
 	    Res
     end.
 	
