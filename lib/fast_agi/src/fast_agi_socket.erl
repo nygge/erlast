@@ -47,9 +47,9 @@ start_link(ListenPid, ListenSocket, ListenPort) ->
 
 %% @doc Send a pdu to the client.
 send(C,Pack) ->
-    io:format("sending ~p~n",[Pack]),
+    io:format("sending ~p~n",[lists:flatten(Pack)]),
     ok=gen_tcp:send(C#connection.sock,Pack),
-    check_result(C).
+    get_result(C).
 
 %%-------------------------------------------------------------------
 %% Callbacks
@@ -77,27 +77,26 @@ init({Listen_pid, Listen_socket, ListenPort}) ->
 %%-------------------------------------------------------------------
 %% Internal functions
 %%-------------------------------------------------------------------
-check_result(C) ->
+get_result(C) ->
     {ok,R}=gen_tcp:recv(C#connection.sock, 0, 30000),
     io:format("result ~p~n",[R]),
+    parse_result(R).
+
+parse_result("200 result="++R) ->
     Res=string:sub_word(R,1,$\n),
-    [list_to_integer(string:sub_word(Res,1)),
-     list_to_integer(string:sub_word(string:sub_word(Res,2),2,$=)),
-     string:sub_word(Res,3)].
+    {ok,Res};
+parse_result("510 Invalid or unknown command\n") ->
+    {error,invalid_command}.
 
 request(C, Req) ->
     case gen_tcp:recv(C#connection.sock, 0, 30000) of
 	{ok,"\n"} ->
 	    handle_req(C,Req);
 	{ok,Line} ->
-	    io:format("Got line = ~p~n",[Line]),
 	    request(C,[parse_line(Line)|Req]);
 	{error,Reason} ->
 	    io:format("Got error = ~p~n",[Reason])
     end.
-
-%% parse_req(Req) ->
-%%     [parse_line(L)||L<-string:tokens(Req,"\n")].
 
 parse_line(L) ->
     Par=string:sub_word(L,1,$:),
@@ -112,10 +111,8 @@ handle_req(C,RPars) ->
     io:format("handle_req: ~p~n",[RPars]),
     {Mod,Fun}=get_script(RPars),
     case catch Mod:Fun(RPars,C) of
-	Res ->
-	    io:format("RESULT ~p~n",[Res]),
-	    gen_tcp:close(C#connection.sock),
-	    Res
+	_Res ->
+	    gen_tcp:close(C#connection.sock)
     end.
 	
 get_script(Req) ->
