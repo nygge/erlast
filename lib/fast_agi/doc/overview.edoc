@@ -37,7 +37,7 @@ The advantages with this aproach are
 <h4>Asterisk callplan, exten.conf</h4>
 <p>Fast_agi is used in the Asterisk call-plan by the AGI application.
 <pre>
-  exten => 123,1 Agi(Host:Port/Path)
+  exten => 123,1 Agi(agi://Host:Port/Path)
 </pre>
 Where 
 <ul>
@@ -50,7 +50,7 @@ Where
 In the erlang fast_agi server the Path has to be given in the format Module/Function. This function must be of arity 2.
 
 <pre>
-  exten => 123,1 Agi(Host:Port/myMod/myFun)
+  exten => 123,1 Agi(agi://Host:Port/myMod/myFun)
 
 will lead to a call to the erlang function
 
