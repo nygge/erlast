@@ -66,3 +66,10 @@ When calling a fast_agi script Asterisk sends the values of all variables define
 
 <p>The erlang fast_agi script can control the call processing in Asterisk by calling the functions in <a href="fast_agi.html">fast_agi</a>.
 </p>
+
+<h4>Tracing</h4>
+It is possible to trace the communication between Asterisk and the fast_agi
+script, by calling the function
+<pre> fast_agi:trace(true) </pre>
+The tracing can be disabled again by
+<pre> fast_agi:trace(false) </pre>

@@ -16,6 +16,7 @@
 %%%-------------------------------------------------------------------
 %%% File    : fast_agi_socket.erl
 %%% Created : 30 Mar 2006 
+%%% @hidden
 %%% @author Anders Nygren <anders.nygren@gmail.com>
 %%% @copyright 2006 Anders Nygren
 %%% @version {@vsn}
@@ -47,7 +48,7 @@ start_link(ListenPid, ListenSocket, ListenPort) ->
 
 %% @doc Send a pdu to the client.
 send(C,Pack) ->
-    io:format("sending ~p~n",[lists:flatten(Pack)]),
+    ?DBG(send,Pack),
     ok=gen_tcp:send(C#connection.sock,Pack),
     get_result(C).
 
@@ -79,7 +80,7 @@ init({Listen_pid, Listen_socket, ListenPort}) ->
 %%-------------------------------------------------------------------
 get_result(C) ->
     {ok,R}=gen_tcp:recv(C#connection.sock, 0, 30000),
-    io:format("result ~p~n",[R]),
+    ?DBG(got,R),
     parse_result(R).
 
 parse_result("200 result="++R) ->
@@ -108,11 +109,16 @@ parse_line(L) ->
     {list_to_atom(Par),Val}.
 
 handle_req(C,RPars) ->
-    io:format("handle_req: ~p~n",[RPars]),
     {Mod,Fun}=get_script(RPars),
     case catch Mod:Fun(RPars,C) of
+	{'EXIT',Reason} ->
+	    error_logger:error_report([{application, fast_agi},
+				       {pid,self()},
+				       {agi_script_exited,{Mod,Fun}},
+				       {request,RPars},
+				       {reason,Reason}]);
 	_Res ->
-	    gen_tcp:close(C#connection.sock)
+	    nothing
     end.
 	
 get_script(Req) ->
