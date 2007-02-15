@@ -79,7 +79,7 @@ init({Listen_pid, Listen_socket, ListenPort}) ->
 %% Internal functions
 %%-------------------------------------------------------------------
 get_result(C) ->
-    {ok,R}=gen_tcp:recv(C#connection.sock, 0, 30000),
+    {ok,R}=gen_tcp:recv(C#connection.sock, 0),
     ?DBG(got,R),
     parse_result(R).
 
