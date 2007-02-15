@@ -33,32 +33,25 @@
 	 trace/1,
 
 	 answer/1,
-	 channel_status/1,
-	 channel_status/2,
+	 channel_status/1,channel_status/2,
 	 db_del/3,
-	 db_del_tree/2,
-	 db_del_tree/3,
+	 db_del_tree/2,db_del_tree/3,
 	 db_get/3,
 	 db_put/4,
 	 exec/3,
 	 get_data/4,
-	 get_full_variable/2,
-	 get_full_variable/3,
-	 get_option/3,
-	 get_option/4,
+	 get_full_variable/2,get_full_variable/3,
+	 get_option/3,get_option/4,
 	 get_variable/2,
-	 hangup/1,
-	 hangup/2,
-	 noop/1,
-	 noop/2,
-	 receive_char/2,
-	 record_file/5,
+	 hangup/1,hangup/2,
+	 noop/1,noop/2,
+	 receive_char/1,receive_char/2,
+	 record_file/4,record_file/5,
 	 say_alpha/3,
 	 say_date/3,
 	 say_datetime/3,
 	 say_digits/3,
-	 say_number/2,
-	 say_number/3,
+	 say_number/2,say_number/3,
 	 say_phonetic/3,
 	 say_time/3,
 	 send_image/2,
@@ -67,16 +60,13 @@
 	 set_callerid/2,
 	 set_context/2,
 	 set_extension/2,
-	 set_music_on/2,
-	 set_music_on/3,
+	 set_music_on/2,set_music_on/3,
 	 set_priority/2,
 	 set_variable/3,
-	 stream_file/2,
-	 stream_file/3,
+	 stream_file/2,stream_file/3,
 	 tdd_mode/2,
 	 verbose/3,
-	 wait_for_digit/1,
-	 wait_for_digit/2]).
+	 wait_for_digit/1,wait_for_digit/2]).
 
 %%====================================================================
 %% API
@@ -100,7 +90,7 @@ answer(C) ->
 
 %% @spec channel_status(C) -> Result
 %%    C      = Connection
-%%    Result = error | {ok,integer()}
+%%    Result = {ok,integer()} | error
 %%
 %% @doc Get the status of the current channel.
 %% @end
@@ -117,7 +107,7 @@ channel_status(C)->
 %% @spec channel_status(C,Channel) -> Result
 %%    C      = Connection
 %%    Channel= String
-%%    Result = integer
+%%    Result = {ok,integer()} | error
 %%
 %% @doc Get the status of the specified channel.
 %% @end
@@ -135,9 +125,7 @@ channel_status(C,Channel)->
 %%    C      = Connection
 %%    Family = string
 %%    Key    = string
-%%    Result = Success | Failure
-%%    Success= 1
-%%    Failure= 0
+%%    Result = ok | error
 %%
 %% @doc Delete the entry from the Asterisk DB given by Family and Key.
 %% @end
@@ -154,9 +142,7 @@ db_del(C,Family,Key) ->
 %% @spec db_del_tree(C,Family) -> Result
 %%    C      = Connection
 %%    Family = string
-%%    Result = Success | Failure
-%%    Success= 1
-%%    Failure= 0
+%%    Result = ok | error
 %%
 %% @doc Deletes the Family from the Asterisk DB.
 %% @end
@@ -174,9 +160,7 @@ db_del_tree(C,Family) ->
 %%    C      = Connection
 %%    Family = string
 %%    Keytree= string
-%%    Result = Success | Failure
-%%    Success= 1
-%%    Failure= 0
+%%    Result = ok | error
 %%
 %% @doc Deletes the Family from the Asterisk DB.
 %% @end
@@ -194,7 +178,7 @@ db_del_tree(C,Family,Keytree) ->
 %%    C      = Connection
 %%    Family = string
 %%    Key    = string
-%%    Result = notset | {value,Value}
+%%    Result = error | {value,Value}
 %%
 %% @doc Get the value from the Asterisk DB.
 %% @end
@@ -213,9 +197,7 @@ db_get(C,Family,Key)->
 %%    Family = string
 %%    Key    = string
 %%    Value  = string
-%%    Result = Success | Failure
-%%    Success= 1
-%%    Failure= 0
+%%    Result = ok | error
 %%
 %% @doc Adds or updates an entry in the Asterisk database for the 
 %%      specified family and key, with the specified value.
@@ -240,7 +222,14 @@ db_put(C,Family,Key,Value) ->
 %% @doc Execute a dialplan application.
 %% @end
 exec(C,Appl,Opts) ->
-    fast_agi_socket:send(C,["EXEC ",Appl," ",Opts,"\n"]).
+    case fast_agi_socket:send(C,["EXEC ",Appl," ",Opts,"\n"]) of
+	{ok,"-2"} ->
+	    {error,app_not_found};
+	{ok,Val} ->
+	    {ok,Val};
+	Error ->
+	    Error
+    end.
 
 %% @spec get_data(C,File,Timeout,MaxDigits) -> Result
 %%    C      = Connection
@@ -270,7 +259,7 @@ get_data(C,File,Timeout,MaxDigits) ->
 %% @spec get_full_variable(C,Var) -> Result
 %%    C      = Connection
 %%    Var    = string
-%%    Result = error|{value,Value}
+%%    Result = {value,Value} | {error,Reason}
 %%    Value  = string
 %%
 %% @doc Get the value of Var.
@@ -289,7 +278,7 @@ get_full_variable(C,Var) ->
 %%    C      = Connection
 %%    Var    = string
 %%    Chnnel = string
-%%    Result = error|{value,Value}
+%%    Result = {value,Value} | {error,Reason}
 %%    Value  = string
 %%
 %% @doc Get the value of Var.
@@ -305,13 +294,10 @@ get_full_variable(C,Var,Channel) ->
     end.
 
 %% @spec get_option(C,File,Escape) -> Result
-%%    C      = Connection
-%%    Result = digits
-%%
-%% @doc Same as stream_file.
+%% @equiv get_option(C,File,Escape,infinity)
 %% @end
 get_option(C,File,Escape) ->
-    get_option(C,File,Escape,"").
+    get_option(C,File,Escape,infinity).
 
 %% @spec get_option(C,File,Escape,Timeout) -> Result
 %%    C      = Connection
@@ -319,6 +305,8 @@ get_option(C,File,Escape) ->
 %%
 %% @doc Same as stream_file but with a timeout in seconds.
 %% @end
+get_option(C,File,Escape,infinity) ->
+    get_option(C,File,Escape,"\"\"");
 get_option(C,File,Escape,Timeout) when is_integer(Timeout) ->
     get_option(C,File,Escape,integer_to_list(Timeout));
 get_option(C,File,Escape,Timeout) ->
@@ -338,7 +326,7 @@ get_option(C,File,Escape,Timeout) ->
 %% @spec get_variable(C,Var) -> Result
 %%    C      = Connection
 %%    Var    = string
-%%    Result = error|{value,Value}
+%%    Result = {value,Value} | error
 %%
 %% @doc Get the value of Var.
 %% @end
@@ -354,7 +342,7 @@ get_variable(C,Var) ->
 
 %% @spec hangup(C) -> Result
 %%    C      = Connection
-%%    Result = ok | {error, nochannel}
+%%    Result = ok | {error, Reason}
 %%
 %% @doc Hangup the current channel.
 %% @end
@@ -363,13 +351,15 @@ hangup(C) ->
 	{ok,"-1"} ->
 	   {error,no_channel};
 	{ok,"1"} ->
-	    ok
+	    ok;
+	Error ->
+	    Error
     end.
 
 %% @spec hangup(C,Channel) -> Result
 %%    C      = Connection
 %%    Channel= string
-%%    Result = ok | {error, nochannel}
+%%    Result = ok | {error, Reason}
 %%
 %% @doc Hangup the specified channel.
 %% @end
@@ -378,12 +368,15 @@ hangup(C,Channel) ->
 	{ok,"-1"} ->
 	   {error,no_channel};
 	{ok,"1"} ->
-	    ok
+	    ok;
+	Error ->
+	    Error
+
     end.
 
 %% @spec noop(C) -> Result
 %%    C      = Connection
-%%    Result = ok
+%%    Result = ok | {error, Reason}
 %%
 %% @doc Does nothing
 %% @end
@@ -398,7 +391,7 @@ noop(C) ->
 %% @spec noop(C,Text) -> Result
 %%    C      = Connection
 %%    Text   = string
-%%    Result = ok
+%%    Result = ok | {error, Reason}
 %%
 %% @doc Does nothing, but prints Text on the Asterisk console.
 %% @end
@@ -410,15 +403,38 @@ noop(C,Text) ->
 	    Error
     end.
 
+%% @spec receive_char(C) -> Result
+%%    C      = Connection
+%%    Result = {ok,Val} | {error,Reason}
+%%
+%% @equiv receive_char(C,infinity)
+%% @end
+receive_char(C) ->
+    receive_char(C,infinity).
+
 %% @spec receive_char(C,Timeout) -> Result
 %%    C      = Connection
-%%    Timeout=integer
-%%    Result = what
+%%    Timeout= integer() | infinity
+%%    Result = {ok,Val} | {error,Reason}
 %%
-%% @doc Receive a character on the current channel.
+%% @doc Receive a character on the current channel. Timeout in milliseconds.
 %% @end
+receive_char(C,infinity) ->
+    receive_char(C,-1);
 receive_char(C,Timeout) ->
-    fast_agi_socket:send(C,["RECEIVE CHAR ",integer_to_list(Timeout),"\n"]).
+    case fast_agi_socket:send(C,["RECEIVE CHAR ",integer_to_list(Timeout),"\n"]) of
+	{ok,"-1 (hangup)"} ->
+	    {error, hangup};
+	{ok,Val} ->
+	    {ok,Val};
+	Error ->
+	    Error
+    end.
+
+%% @spec record_file(C,File,Format,Escape) -> Result
+%% @equiv record_file(C,File,Format,Escape,infinity)
+record_file(C,File,Format,Escape) ->
+    record_file(C,File,Format,Escape,infinity).
 
 %% @spec record_file(C,File,Format,Escape,Timeout) -> Result
 %%    C      = Connection
@@ -426,7 +442,7 @@ receive_char(C,Timeout) ->
 %%    Format = string
 %%    Escape = string
 %%    Timeout= integer
-%%    Result = what
+%%    Result = ok | error
 %%
 %% @doc Record audio.
 %% @end
@@ -436,14 +452,16 @@ record_file(C,File,Format,Escape,Timeout) ->
 	{ok,"-1"} ->
 	    error;
 	{ok,"0"} ->
-	    ok
+	    ok;
+	Error ->
+	    Error
     end.
 
 %% @spec say_alpha(C,Number,Escape) -> Result
 %%    C      = Connection
 %%    Number = integer
 %%    Escape = string
-%%    Result = what
+%%    Result = {ok,Key} | {error,Reason}
 %%
 %% @doc 
 %% @end
@@ -451,51 +469,63 @@ say_alpha(C,Number,Escape) ->
     case fast_agi_socket:send(C,["SAY ALPHA ",integer_to_list(Number)," ",
 				 Escape,"\n"]) of
 	{ok,"-1"} ->
-	    error;
+	    {error,error_or_hangup};
+	{ok,"0"} ->
+	    {ok,no_key};
 	{ok,_Key}=Res ->
-	    Res
+	    Res;
+	Error ->
+	    Error
     end.
 
 %% @spec say_date(C,Date,Escape) -> Result
 %%    C      = Connection
 %%    Date   = integer
 %%    Escape = string
-%%    Result = what
+%%    Result = {ok,Key} | {error,Reason}
 %%
-%% @doc Says the given date. The Date is given as a UNIX time, i.e. number of secunds since 00:00:00 on January 1, 1970.
+%% @doc Says the given date. The Date is given as a UNIX time, i.e. number of secunds since 00:00:00 on January 1, 1970, UTC.
 %% @end
-say_date(C,Date,Escape) ->
+say_date(C,Date,Escape) when is_integer(Date) ->
     case fast_agi_socket:send(C,["SAY DATE ",integer_to_list(Date)," ",
 				 Escape,"\n"]) of
 	{ok,"-1"} ->
-	    error;
+	    {error,error_or_hangup};
+	{ok,"0"} ->
+	    {ok,no_key};
 	{ok,_Key}=Res ->
-	    Res
+	    Res;
+	Error ->
+	    Error
     end.
 
 %% @spec say_datetime(C,Datetime,Escape) -> Result
 %%    C      = Connection
 %%    Datetime= integer
 %%    Escape = string
-%%    Result = what
+%%    Result = {ok,Key} | {error,Reason}
 %%
 %% @doc Says the given datetime. The Datetime is given as a UNIX time, i.e. 
-%%      number of secunds since 00:00:00 on January 1, 1970.
+%%      number of secunds since 00:00:00 on January 1, 1970, UTC.
 %% @end
-say_datetime(C,Datetime,Escape) ->
+say_datetime(C,Datetime,Escape) when is_integer(Datetime) ->
     case fast_agi_socket:send(C,["SAY DATETIME ",integer_to_list(Datetime)," ",
 				 Escape,"\n"]) of
 	{ok,"-1"} ->
-	    error;
+	    {error,error_or_hangup};
+	{ok,"0"} ->
+	    {ok,no_key};
 	{ok,_Key}=Res ->
-	    Res
+	    Res;
+	Error ->
+	    Error
     end.
 
 %% @spec say_digits(C,Number,Escape) -> Result
 %%    C      = Connection
 %%    Number = integer
 %%    Escape = string
-%%    Result = what
+%%    Result = {ok,Key} | {error,Reason}
 %%
 %% @doc Say digits.
 %% @end
@@ -503,35 +533,30 @@ say_digits(C,Number,Escape) ->
     case fast_agi_socket:send(C,["SAY DIGITS ",integer_to_list(Number)," ",
 				 Escape,"\n"]) of
 	{ok,"-1"} ->
-	    error;
+	    {error,error_or_hangup};
+	{ok,"0"} ->
+	    {ok,no_key};
 	{ok,_Key}=Res ->
-	    Res
+	    Res;
+	Error ->
+	    Error
     end.
 
 %% @spec say_number(C,Number) -> Result
 %%    C      = Connection
 %%    Number = integer
-%%    Result = ok | error | {error, Reason}
+%%    Result = {ok,Key} | {error,Reason}
 %%
 %% @doc Say number.
 %% @end
 say_number(C,Number) ->
     say_number(C,Number,"\"\"").
-%%     case fast_agi_socket:send(C,["SAY NUMBER ",integer_to_list(Number),
-%% 				 " \"\" ", "\n"]) of
-%% 	{ok,"-1"} ->
-%% 	    error;
-%% 	{ok,"0"} ->
-%% 	    ok;
-%% 	Error ->
-%% 	    Error
-%%     end.
 
 %% @spec say_number(C,Number,Escape) -> Result
 %%    C      = Connection
 %%    Number = integer
 %%    Escape = string
-%%    Result = ok | {digit, Digit} | {error, Reason}
+%%    Result = {ok,Key} | {error,Reason}
 %%
 %% @doc Say number.
 %% @end
@@ -539,11 +564,11 @@ say_number(C,Num,Escape) when is_list(Escape)->
     case fast_agi_socket:send(C,["SAY NUMBER ",integer_to_list(Num),
 				 " ", Escape, " \n"]) of
 	{ok,"-1"} ->
-	    error;
+	    {error,error_or_hangup};
 	{ok,"0"} ->
-	    ok;
-	{ok,Digit} ->
-	    {digit,Digit};
+	    {ok,no_key};
+	{ok,_Key}=Res ->
+	    Res;
 	Error ->
 	    Error
     end.
@@ -551,23 +576,27 @@ say_number(C,Num,Escape) when is_list(Escape)->
 %% @spec say_phonetic(C,String,Escape) -> Result
 %%    C      = Connection
 %%    String = string
-%%    Result = what
+%%    Result = {ok,Key} | {error,Reason}
 %%
 %% @doc Say string with phonetics.
 %% @end
 say_phonetic(C,String,Escape) ->
     case fast_agi_socket:send(C,["SAY PHONETIC ",String," ",Escape,"\n"]) of
 	{ok,"-1"} ->
-	    error;
+	    {error,error_or_hangup};
+	{ok,"0"} ->
+	    {ok,no_key};
 	{ok,_Key}=Res ->
-	    Res
+	    Res;
+	Error ->
+	    Error
     end.
 
 %% @spec say_time(C,Time,Escape) -> Result
 %%    C      = Connection
 %%    Time   = integer
 %%    Escape = string
-%%    Result = what
+%%    Result = {ok,Key} | {error,Reason}
 %%
 %% @doc Say time. The Time is given as a UNIX time, i.e. 
 %%      number of secunds since 00:00:00 on January 1, 1970.
@@ -576,9 +605,13 @@ say_time(C,Time,Escape) ->
     case fast_agi_socket:send(C,["SAY TIME ",integer_to_list(Time)," ",
 				 Escape,"\n"]) of
 	{ok,"-1"} ->
-	    error;
+	    {error,error_or_hangup};
+	{ok,"0"} ->
+	    {ok,no_key};
 	{ok,_Key}=Res ->
-	    Res
+	    Res;
+	Error ->
+	    Error
     end.
 
 %% @spec send_image(C,Image) -> Result
@@ -589,7 +622,14 @@ say_time(C,Time,Escape) ->
 %% @doc Send an image on the current channel.
 %% @end
 send_image(C,Image) ->
-    fast_agi_socket:send(C,["SEND IMAGE ",Image,"\n"]).
+    case fast_agi_socket:send(C,["SEND IMAGE ",Image,"\n"]) of
+	{ok,"-1"} ->
+	    {error,error_or_hangup};
+	{ok,"0"} ->
+	    ok;
+	Error ->
+	    Error
+    end.
 
 %% @spec send_text(C,Text) -> Result
 %%    C      = Connection
@@ -599,12 +639,19 @@ send_image(C,Image) ->
 %% @doc Send a text on the current channel.
 %% @end
 send_text(C,Text) ->
-    fast_agi_socket:send(C,["SEND TEXT ",Text,"\n"]).
+    case fast_agi_socket:send(C,["SEND TEXT ",Text,"\n"]) of
+	{ok,"-1"} ->
+	    {error,error_or_hangup};
+	{ok,"0"} ->
+	    ok;
+	Error ->
+	    Error
+    end.
 
 %% @spec set_autohangup(C,Time) -> Result
 %%    C      = Connection
 %%    Time   = integer
-%%    Result = what
+%%    Result = ok | {error,Reason}
 %%
 %% @doc Set the channel to hangup after Time seconds.
 %% @end
@@ -619,7 +666,7 @@ set_autohangup(C,Time) ->
 %% @spec set_callerid(C,Number) -> Result
 %%    C      = Connection
 %%    Number = string
-%%    Result = what
+%%    Result = ok | {error,Reason}
 %%
 %% @doc Set callerid for the current channel.
 %% @end
@@ -634,7 +681,7 @@ set_callerid(C,Number) ->
 %% @spec set_context(C,Context) -> Result
 %%    C      = Connection
 %%    Context= string
-%%    Result = what
+%%    Result = ok | {error,Reason}
 %%
 %% @doc Set the context for continuation upon exiting the AGI application.
 %% @end
@@ -649,7 +696,7 @@ set_context(C,Context) ->
 %% @spec set_extension(C,Extension) -> Result
 %%    C      = Connection
 %%    Extension=string
-%%    Result = what
+%%    Result = ok | {error,Reason}
 %%
 %% @doc Changes the extension for continuation upon exiting the AGI application.
 %% @end
@@ -675,12 +722,13 @@ set_music_on(C,State) ->
 %%    C      = Connection
 %%    State  = on|off
 %%    Class  = string
-%%    Result = what
+%%    Result = ok | {error,Reason}
 %%
 %% @doc Enable/disable the Music on Hold generator.
 %% @end
 set_music_on(C,State,Class) ->
-    case fast_agi_socket:send(C,["SET MUSIC ON ",State," ",Class,"\n"]) of
+    case fast_agi_socket:send(C,["SET MUSIC ON ",atom_to_list(State),
+				 " ",Class,"\n"]) of
 	{ok,"0"} ->
 	    ok;
 	Error ->
@@ -690,7 +738,7 @@ set_music_on(C,State,Class) ->
 %% @spec set_priority(C,Priority) -> Result
 %%    C      = Connection
 %%    Priority=string
-%%    Result = what
+%%    Result = ok | {error,Reason}
 %%
 %% @doc Changes the priority for continuation upon exiting the AGI application.
 %% @end
@@ -706,7 +754,7 @@ set_priority(C,Priority) ->
 %%    C      = Connection
 %%    Variable = string
 %%    Value  = string
-%%    Result = ok
+%%    Result = ok | {error,Reason}
 %%
 %% @doc Sets or updates the value of Variable.
 %% @end
@@ -721,7 +769,7 @@ set_variable(C,Variable,Value) ->
 %% @spec stream_file(C,File) -> Result
 %%    C      = Connection
 %%    File   = string
-%%    Result = what
+%%    Result = {ok,timeout} | {ok,Key,EndPos} | {error,Reason}
 %%
 %% @doc Play audio file indicated by File.
 %% @end
@@ -732,7 +780,7 @@ stream_file(C,File) ->
 %%    C      = Connection
 %%    File   = string
 %%    Escape = string
-%%    Result = what
+%%    Result = {ok,timeout} | {ok,Key,EndPos} | {error,Reason}
 %%
 %% @doc Play audio file indicated by File.
 %% @end
@@ -753,14 +801,14 @@ stream_file(C,File,Escape) ->
 %% @spec tdd_mode(C,Mode) -> Result
 %%    C      = Connection
 %%    Mode   = on|off
-%%    Result = what
+%%    Result = ok | {error,Reason}
 %%
 %% @doc Enable/disable TDD on this channel.
 %% @end
 tdd_mode(C,Mode) ->
     case fast_agi_socket:send(C,["TDD MODE ",atom_to_list(Mode),"\n"]) of
 	{ok,"0"} ->
-	    error;
+	    {error,chan_not_tdd_capable};
 	{ok,"1"} ->
 	    ok;
 	Error ->
@@ -771,7 +819,7 @@ tdd_mode(C,Mode) ->
 %%    C      = Connection
 %%    Message= string
 %%    Level  = string
-%%    Result = what
+%%    Result = ok | {error,Reason}
 %%
 %% @doc Sends Message to console via the verbose message system.
 %% @end
@@ -784,37 +832,38 @@ verbose(C,Message,Level) ->
     end.
 
 %% @spec wait_for_digit(C) -> Result
-%%    C      = Connection
-%%    Result = what
 %%
-%% @doc Wait for a DTMF digit on the current channel.
+%% @equiv wait_for_digit(C,infinity)
 %% @end
 wait_for_digit(C) ->
-    wait_for_digit(C,-1).
+    wait_for_digit(C,infinity).
 
 %% @spec wait_for_digit(C,Timeout) -> Result
 %%    C      = Connection
-%%    Timeout= integer
-%%    Result = what
+%%    Timeout= integer() | infinity
+%%    Result = {ok,Digit} | {error,Reason}
 %%
 %% @doc Wait for a DTMF digit on the current channel. The timeout is in milliseconds.
 %% @end
+wait_for_digit(C,infinity) ->
+    wait_for_digit(C,-1);
 wait_for_digit(C,Timeout) ->
     case fast_agi_socket:send(C,["WAIT FOR DIGIT ",
 				 integer_to_list(Timeout),"\n"]) of
 	{ok,"-1"} ->
-	    error;
+	    {error,error_or_channel_failure};
 	{ok,"0"} ->
-	    timeout;
+	    {error,timeout};
 	{ok,_V}=Res ->
 	    Res;
 	Error ->
 	    Error
     end.
 
-%% @spec get_var(Var::string(),Req::request()) -> string() | undefined
-%%    Var = Variable
-%%    Req = Request
+%% @spec get_var(Var::string(),Req::request()) -> Result
+%%    Var    = Variable
+%%    Req    = Request
+%%    Result = {value,{Var,Val}} | undefined
 %%
 %% @doc Get the value of a variable passed from Asterisk. 
 %% Returns undefined if the variable is not set.
