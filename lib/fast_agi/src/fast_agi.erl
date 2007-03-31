@@ -265,7 +265,7 @@ get_data(C,File,Timeout,MaxDigits) ->
 %% @doc Get the value of Var.
 %% @end
 get_full_variable(C,Var) ->
-    case fast_agi_socket:send(C,["GET FULL VARIABLE ",Var,"\n"]) of
+    case fast_agi_socket:send(C,["GET FULL VARIABLE \"",Var,"\"\n"]) of
 	{ok,"0"} ->
 	    {error,var_not_set};
 	{ok,"1 ("++Val} ->
