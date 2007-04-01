@@ -45,6 +45,7 @@
 	 start_link/3,
 	 start_link/4,
 	 get_adm_state/1,set_adm_state/2,
+	 get_capacity/1,set_capacity/2,
 	 get_op_state/1,
 	 get_stats/1,
 	 get_usage_state/1,
@@ -117,6 +118,11 @@ start_link(Name,CBMod,CBPars,Port,Opts) when is_list(Opts) ->
 %%--------------------------------------------------------------------
 %% @spec get_adm_state(Server) -> locked|unlocked|shutting_down
 %% @doc Get the administrative state of the server.
+%% <dl>
+%% <dt>locked</dt><dd>The server is administratively prohibited from use.</dd>
+%% <dt>unlocked</dt><dd>The server is not administratively prohibited from use</dd>
+%% <dt>shutting_down</dt><dd>The server is shutting down.</dd>
+%% </dl>
 %% @end
 %%--------------------------------------------------------------------
 get_adm_state(Server) ->
@@ -132,6 +138,22 @@ set_adm_state(Server,State) when State==lock;State==unlock ->
     gen_server:call(Server,{set_adm_state,State}).
 
 %%--------------------------------------------------------------------
+%% @spec get_capacity(Server) -> integer()
+%% @doc Get the number of allowed connections
+%% @end
+%%--------------------------------------------------------------------
+get_capacity(Server) ->
+    gen_server:call(Server,get_capacity).
+
+%%--------------------------------------------------------------------
+%% @spec set_capacity(Server,Capacity::integer()) -> ok
+%% @doc Set the number of allowed connections
+%% @end
+%%--------------------------------------------------------------------
+set_capacity(Server,Capacity) when is_integer(Capacity), Capacity > 0 ->
+    gen_server:call(Server,{set_capacity,Capacity}).
+
+%--------------------------------------------------------------------
 %% @spec get_op_state(Server) -> enabled|{disabled,Reason}
 %% @doc Get the operational state of the server.
 %% @end
@@ -150,6 +172,11 @@ get_stats(Server) ->
 %%--------------------------------------------------------------------
 %% @spec get_usage_state(Server) -> active|busy|idle
 %% @doc Get the usage state of the server.
+%% <dl>
+%% <dt>active</dt><dd>There are some active sessions</dd>
+%% <dt>busy</dt><dd>All sessions are active</dd>
+%% <dt>idle</dt><dd>There are no active sessions</dd>
+%% </dl>
 %% @end
 %%--------------------------------------------------------------------
 get_usage_state(Server) ->
@@ -220,6 +247,14 @@ handle_call(get_adm_state, _From, State) ->
 handle_call({set_adm_state,NewState}, _From, State) 
   when State#state.adm_state==NewState ->
     {reply, ok, State};
+
+handle_call(get_capacity, _From, State) ->
+    Reply = State#state.max_conns,
+    {reply, Reply, State};
+
+handle_call({set_capacity,Capacity}, _From, State) ->
+    State1=State#state.max_conns,
+    {reply, ok, State1};
 
 handle_call({set_adm_state,unlock}, _From, State) ->
     case open_listen_socket(State) of

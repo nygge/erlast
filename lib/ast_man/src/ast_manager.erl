@@ -91,7 +91,7 @@
 	 mailboxcount/1,
  	 mailbox_status/1,
  	 monitor/4,
-%% 	 originate
+ 	 originate/7,
  	 parked_calls/0,
  	 ping/0,
  	 queue_add/4,
@@ -137,6 +137,7 @@
 %% @doc Start the manager server
 start_link() ->
     gen_server:start_link({local, ?SERVER}, ?MODULE, [], []).
+%%    gen_server:start_link({local, ?SERVER}, ?MODULE, [], [{debug,[trace]}]).
 
 %% @doc Subscribe to events.
 subscribe(User,Secret,Events) ->
@@ -245,8 +246,14 @@ monitor(Channel,File,Format,Mix) ->
 					  mix=Mix}}).
 
 %% %@doc Originate Call.
-%% originate(Channel,......) ->
-%% gen_server:call(?SERVER,{req,#originate{channel}}).
+originate(Channel, Dest, Timeout, CID, Vars, Acct, Async) ->
+    gen_server:call(?SERVER,{req,#originate{channel=Channel,
+					    dest=Dest,
+					    timeout=Timeout,
+					    cid=CID,
+					    vars=Vars,
+					    account=Acct,
+					    async=Async}},10000).
 
 %% @doc List parked calls.
 parked_calls() ->
@@ -360,8 +367,9 @@ zap_show_channels() ->
 %% @private
 %%--------------------------------------------------------------------
 init([]) ->
-    AId=login("Anders","Secret"),
-    {ok, #state{queue=queue:new(),pending={AId,self,login},state=login}}.
+    AId=login("anders","secret"),
+    {ok, #state{queue=queue:new(),pending={AId,self,login},state=free}}.
+%%    {ok, #state{queue=queue:new(),pending={AId,self,login},state=login}}.
 
 %%--------------------------------------------------------------------
 %% Function: %% handle_call(Request, From, State) -> {reply, Reply, State} |
@@ -525,6 +533,27 @@ make_pdu(#monitor{channel=Channel,file=File,format=Format,mix=Mix}) ->
      "Format: ",Format,"\r\n"
      "Mix: ",Mix,"\r\n"];
 
+make_pdu(#originate{channel=Channel,dest={Appl,Data},timeout=Timeout,cid=CID,vars=Vars,account=Acct,async=Async}) ->
+    ["Action: Originate\r\n"
+     "Channel: ",Channel,"\r\n"
+     "Application: ", Appl, "\r\n"
+     "Data: ", Data, "\r\n"
+     "Timeout: ", integer_to_list(Timeout), "\r\n"
+     "CallerId: ", CID, "\r\n"
+     "Account: ", Acct, "\r\n"
+     "Async: ", atom_to_list(Async), "\r\n"];
+
+make_pdu(#originate{channel=Channel,dest={Context,Exten,Prio},timeout=Timeout,cid=CID,vars=Vars,account=Acct,async=Async}) ->
+    ["Action: Originate\r\n"
+     "Channel: ",Channel,"\r\n"
+     "Context: ", Context, "\r\n"
+     "Extension: ", Exten, "\r\n"
+     "Priority: ", Prio, "\r\n"
+     "Timeout: ", integer_to_list(Timeout), "\r\n"
+     "CallerId: ", CID, "\r\n"
+     "Account: ", Acct, "\r\n"
+     "Async: ", atom_to_list(Async), "\r\n"];
+
 make_pdu(#parked_calls{}) ->
     "Action: ParkedCalls\r\n";
     
@@ -678,17 +707,28 @@ handle_response({_AId,_From,login},_Res,_Pdu,State) ->
 %%     State;
 
 handle_response({AId,From,Cmd},Res,Pdu,State) when State#state.list_resp==false ->
+io:format("hr1~n",[]),
     case lists:keysearch("Message",1,Pdu) of
 	{value,{"Message",Txt}} ->
-	    State#state{list_resp=true,
-			resp_acc=[Pdu|State#state.resp_acc]};
+	    case lists:member(Txt,["Peer status list will follow",
+				   "Originate successfully queued" ]) of
+		true ->
+		    State#state{list_resp=true,
+				resp_acc=[Pdu|State#state.resp_acc]};
+		false ->
+		    gen_server:reply(From,{Cmd,Res,Pdu}),
+		    State#state{pending=undefined,state=free}
+	    end;
 	false ->
 	    gen_server:reply(From,{Cmd,Res,Pdu}),
 	    State#state{pending=undefined,state=free}
     end;
 
 handle_response({AId,From,Cmd},Res,Pdu,State) ->
+io:format("hr2~n",[]),
     case lists:keysearch("Event",1,Pdu) of
+	{value,{"Event","OriginateSuccess"}} ->
+	    resp_done(From,Cmd,State#state{resp_acc=[Pdu|State#state.resp_acc]});
 	{value,{"Event","PeerlistComplete"}} ->
 	    resp_done(From,Cmd,State);
 	{value,{"Event","StatusComplete"}} ->

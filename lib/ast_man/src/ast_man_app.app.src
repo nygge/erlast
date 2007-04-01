@@ -18,6 +18,7 @@
   {vsn,"%VSN%"},
   {modules,[%MODULES%]},
   {applications,[kernel,stdlib]},
+  {registered,[]},
   {mod, {ast_man_app,[]}},
   {env,[]}
  ]}.

@@ -26,27 +26,27 @@
 -include("manager_api.hrl").
 
 %% API
--export([make_pdu/1,
+-export([encode/1,
 	 parse/1]).
 
 %%====================================================================
 %% API
 %%====================================================================
 %%--------------------------------------------------------------------
-%% @spec make_pdu(Cmd::ami_cmd()) -> io_list()
+%% @spec encode(Cmd::ami_cmd()) -> io_list()
 %% @doc Create a binary pdu from a command record.
 %% @end
 %%--------------------------------------------------------------------
-make_pdu(#absolute_timeout{channel=Channel,timeout=Timeout} ) ->
+encode(#req_absolute_timeout{channel=Channel,timeout=Timeout} ) ->
     pack_pdu([{"Action","AbsoluteTimeout"},
 	      {"Channel",Channel},
 	      {"Timeout",Timeout}]);
 
-make_pdu(#agent_callback_login{agent=Agent,
-			       exten=Exten,
-			       context=Context,
-			       ackCall=AckCall,
-			       wrapUpTime=WrapUpTime} ) ->
+encode(#req_agent_callback_login{agent=Agent,
+				 exten=Exten,
+				 context=Context,
+				 ackCall=AckCall,
+				 wrapUpTime=WrapUpTime} ) ->
     pack_pdu([{"Action","AgentCallBackLogin"},
 	      {"Agent",Agent},
 	      {"Exten",Exten},
@@ -54,123 +54,153 @@ make_pdu(#agent_callback_login{agent=Agent,
 	      {"AckCall",AckCall},
 	      {"WrapUpTime",WrapUpTime}]);
 
-make_pdu( #agent_logoff{agent=Agent,soft=Soft}) ->
+encode( #req_agent_logoff{agent=Agent,soft=Soft}) ->
     pack_pdu([{"Action","AgentLogoff"},
 	      {"Agent",Agent},
 	      {"soft",Soft}]);
 
-make_pdu(#agents{} ) ->
+encode(#req_agents{} ) ->
     pack_pdu([{"Action","Agents"}]);
 
-make_pdu(#change_monitor{channel=Channel,file=File} ) ->
+encode(#req_challenge{authtype=AuthType}) ->
+    pack_pdu([{"Action","Challenge"},
+	      {"AuthType",AuthType}]);
+
+encode(#req_change_monitor{channel=Channel,file=File} ) ->
     pack_pdu([{"Action","ChangeMonitor"},
 	      {"Channel",Channel},
 	      {"File",File}]);
 
-make_pdu(#command{command=Command} ) ->
+encode(#req_command{command=Command} ) ->
     pack_pdu([{"Action","Command"},
 	      {"Command",Command}]);
 
-make_pdu(#db_get{family=Family,key=Key} ) ->
+encode(#req_db_del{family=Family,key=Key} ) ->
+    pack_pdu([{"Action","DBDel"},
+	      {"Family",Family},
+	      {"Key",Key }]);
+
+encode(#req_db_get{family=Family,key=Key} ) ->
     pack_pdu([{"Action","DBGet"},
 	      {"Family",Family},
 	      {"Key",Key }]);
 
-make_pdu(#db_put{family=Family,key=Key,value=Value} ) ->
+encode(#req_db_put{family=Family,key=Key,value=Value} ) ->
     pack_pdu([{"Action","DBPut"},
 	      {"Family",Family},
 	      {"Key",Key},
 	      {"Value",Value}]);
 
-make_pdu(#events{eventMask=EventMask} ) ->
+encode(#req_events{eventMask=EventMask} ) ->
     pack_pdu([{"Action","Events"},
 	      {"EventMask",EventMask}]);
 
-make_pdu(#extension_state{extension=Extension,context=Context} ) ->
+encode(#req_extension_state{extension=Extension,context=Context} ) ->
     pack_pdu([{"Action","ExtensionState"},
 	      {"Extension",Extension},
 	      {"Context",Context}]);
 
-make_pdu(#get_var{channel=Channel,var=Var}) ->
+encode(#req_get_var{channel=Channel,var=Var}) ->
     pack_pdu([{"Action","GetVar"},
 	      {"Channel",Channel},
 	      {"Var",Var}]);
 
-make_pdu(#hangup{channel=Channel}) ->
+encode(#req_hangup{channel=Channel}) ->
     pack_pdu([{"Action","Hangup"},
 	      {"Channel",Channel}]);
 
-make_pdu(#iax_netstats{} ) ->
+encode(#req_iax_netstats{} ) ->
     pack_pdu([{"Action","IAXnetstats"}]);
 
-make_pdu(#iax_peers{} ) ->
+encode(#req_iax_peers{} ) ->
     pack_pdu([{"Action","IAXPeers"}]);
 
-make_pdu(#list_commands{} ) ->
+encode(#req_list_commands{} ) ->
     pack_pdu([{"Action","ListCommands"}]);
 
-make_pdu(#login{user=User,secret=Secret}) ->
+encode(#req_login{user=User,secret=Secret}) ->
     pack_pdu([{"Action","login"},
 	      {"Username",User},
 	      {"Secret",Secret}]);
 
-make_pdu(#mailboxcount{mailbox=Mbox}) ->
+encode(#req_mailbox_count{mailbox=Mbox}) ->
     pack_pdu([{"Action","MailboxCount"},
 	      {"Mailbox",Mbox}]);
 
-make_pdu(#mailbox_status{mailbox=Mailbox}) ->
+encode(#req_mailbox_status{mailbox=Mailbox}) ->
     pack_pdu([{"Action","MailboxStatus"},
 	      {"Mailbox",Mailbox}]);
 
-make_pdu(#monitor{channel=Channel,file=File,format=Format,mix=Mix}) ->
+encode(#req_monitor{channel=Channel,file=File,format=Format,mix=Mix}) ->
     pack_pdu([{"Action","Monitor"},
 	      {"Channel",Channel},
 	      {"File",File},
 	      {"Format",Format},
 	      {"Mix",Mix}]);
 
-make_pdu(#parked_calls{}) ->
+encode(#req_originate{channel=Channel,dest={Appl,Data},timeout=Timeout,cid=CID,vars=Vars,account=Acct,async=Async}) ->
+    pack_pdu([{"Action","Originate"},
+	      {"Channel",Channel},
+	      {"Application", Appl},
+	      {"Data", Data},
+	      {"Timeout", integer_to_list(Timeout)},
+	      {"CallerId", CID},
+	      {"Account", Acct},
+	      {"Async", atom_to_list(Async)}]);
+
+encode(#req_originate{channel=Channel,dest={Context,Exten,Prio},timeout=Timeout,cid=CID,vars=Vars,account=Acct,async=Async}) ->
+    pack_pdu([{"Action","Originate"},
+	      {"Channel",Channel},
+	      {"Context", Context},
+	      {"Extension", Exten},
+	      {"Priority", Prio},
+	      {"Timeout", integer_to_list(Timeout)},
+	      {"CallerId", CID},
+	      {"Account", Acct},
+	      {"Async", atom_to_list(Async)}]);
+
+encode(#req_parked_calls{}) ->
     pack_pdu([{"Action","ParkedCalls"}]);
 
-make_pdu(#ping{}) ->
+encode(#req_ping{}) ->
     pack_pdu([{"Action","Ping"}]);
 
-make_pdu(#queue_add{interface=Interface,
-		    queue=Queue,
-		    penalty=Penalty,
-		    pause=Pause}) ->
+encode(#req_queue_add{interface=Interface,
+		      queue=Queue,
+		      penalty=Penalty,
+		      pause=Pause}) ->
     pack_pdu([{"Action","QueueAdd"},
 	      {"Interface",Interface},
 	      {"Queue",Queue},
 	      {"Penalty",Penalty},
 	      {"Pause",Pause}]);
 
-make_pdu(#queue_pause{interface=Interface,
-		      queue=Queue,
-		      pause=Pause}) ->
+encode(#req_queue_pause{interface=Interface,
+			queue=Queue,
+			pause=Pause}) ->
     pack_pdu([{"Action","QueuePause"},
 	      {"Interface",Interface},
 	      {"Queue",Queue},
 	      {"Pause",Pause}]);
 
-make_pdu(#queue_remove{interface=Interface,
-		       queue=Queue}) ->
+encode(#req_queue_remove{interface=Interface,
+			 queue=Queue}) ->
     pack_pdu([{"Action","QueueRemove"},
 	      {"Interface",Interface},
 	      {"Queue",Queue}]);
 
-make_pdu(#queues{}) ->
+encode(#req_queues{}) ->
     pack_pdu([{"Action","Queues"}]);
 
-make_pdu(#queue_status{}) ->
+encode(#req_queue_status{}) ->
     pack_pdu([{"Action","QueueStatus"}]);
 
 
-make_pdu(#redirect{channel=Channel,
-		   extrachannel=ExtraChannel,
-		   exten=Exten,
-		   context=Context,
-		   priority=Priority}) ->
+encode(#req_redirect{channel=Channel,
+		     extrachannel=ExtraChannel,
+		     exten=Exten,
+		     context=Context,
+		     priority=Priority}) ->
     pack_pdu([{"Action","Redirect"},
 	      {"Channel",Channel},
 	      {"Extrachannel",ExtraChannel},
@@ -178,59 +208,217 @@ make_pdu(#redirect{channel=Channel,
 	      {"Context",Context},
 	      {"Priority",Priority}]);
 
-make_pdu(#set_cdr_user_field{channel=Channel,
-			     userfield=Userfield,
-			     append=Append}) ->
+encode(#req_set_cdr_user_field{channel=Channel,
+			       userfield=Userfield,
+			       append=Append}) ->
     pack_pdu([{"Action","SetCDRUserField"},
 	      {"Channel",Channel},
 	      {"Userfield",Userfield},
 	      {"Append",Append}]);
 
-make_pdu(#set_var{channel=Channel,
-		  variable=Variable,
-		  value=Value}) ->
+encode(#req_set_var{channel=Channel,
+		    variable=Variable,
+		    value=Value}) ->
     pack_pdu([{"Action","SetVar"},
 	      {"Channel",Channel},
 	      {"Variable",Variable},
 	      {"Value",Value}]);
 
-make_pdu(#sip_showpeer{peer=Peer}) ->
+encode(#req_sip_showpeer{peer=Peer}) ->
     pack_pdu([{"Action","SIPshowpeer"},
 	      {"Peer",Peer}]);
 
-make_pdu(#sip_peers{}) ->
+encode(#req_sip_peers{}) ->
     pack_pdu([{"Action","SIPpeers"}]);
 
-make_pdu(#status{}) ->
+encode(#req_status{}) ->
     pack_pdu([{"Action","Status"}]);
 
-make_pdu(#stop_monitor{channel=Channel}) ->
+encode(#req_stop_monitor{channel=Channel}) ->
     pack_pdu([{"Action","StopMonitor"},
 	      {"Channel",Channel}]);
 
-make_pdu(#zap_dial_offhook{channel=Channel,
-			   number=Number}) ->
+encode(#req_zap_dial_offhook{channel=Channel,
+			     number=Number}) ->
     pack_pdu([{"Action","ZapDialOffhook"},
 	      {"Channel",Channel},
 	      {"Number",Number}]);
 
-make_pdu(#zap_dnd_off{channel=Channel}) ->
+encode(#req_zap_dnd_off{channel=Channel}) ->
     pack_pdu([{"Action","ZapDNDOff"},
 	      {"Channel",Channel}]);
 
-make_pdu(#zap_dnd_on{channel=Channel}) ->
+encode(#req_zap_dnd_on{channel=Channel}) ->
     pack_pdu([{"Action","ZapDNDOn"},
 	      {"Channel",Channel}]);
 
-make_pdu(#zap_hangup{channel=Channel}) ->
+encode(#req_zap_hangup{channel=Channel}) ->
     pack_pdu([{"Action","ZapHangup"},
 	      {"Channel",Channel}]);
 
-make_pdu(#zap_show_channels{}) ->
+encode(#req_zap_show_channels{}) ->
     pack_pdu([{"Action","ZapShowChannels"}]).
 
-make_record(Pdu) ->
-    ok.
+%%--------------------------------------------------------------------
+%% @spec parse_action(Action::string(),Pars::list()) -> :ami_cmd()
+%% @doc Create an action request record from a .
+%% @end
+%%--------------------------------------------------------------------
+parse_action("AbsoluteTimeout",Pdu) ->
+    #req_absolute_timeout{channel=get_pdu_var("Channel",Pdu),
+			  timeout=get_pdu_var("Timeout",Pdu)};
+parse_action("AgentCallbackLogin",Pdu) ->
+    #req_agent_callback_login{agent=get_pdu_var("Agent",Pdu),
+			      exten=get_pdu_var("Exten",Pdu),
+			      context=get_pdu_var("Context",Pdu),
+			      ackCall=get_pdu_var("AckCall",Pdu),
+			      wrapUpTime=get_pdu_var("WrapUpTime",Pdu)};
+parse_action("AgentLogoff",Pdu) ->
+    #req_agent_logoff{agent=get_pdu_var("Agent",Pdu),
+		      soft=get_pdu_var("Soft",Pdu)};
+
+parse_action("Agents",_Pdu) ->
+    #req_agents{};
+
+parse_action("ChangeMonitor",Pdu) ->
+    #req_change_monitor{channel=get_pdu_var("Channel",Pdu),
+			file=get_pdu_var("File",Pdu)};
+
+parse_action("Command",Pdu) ->
+    #req_command{command=get_pdu_var("Command",Pdu)};
+
+parse_action("DBGet",Pdu) ->
+    #req_db_get{family=get_pdu_var("Family",Pdu),
+		key=get_pdu_var("Key",Pdu)};
+
+parse_action("DBPut",Pdu) ->
+    #req_db_put{family=get_pdu_var("Family",Pdu),
+		key=get_pdu_var("Key",Pdu),
+		value=get_pdu_var("Value",Pdu)};
+
+parse_action("Events",Pdu) ->
+    #req_events{eventMask=get_pdu_var("EventMask",Pdu)};
+
+parse_action("ExtensionState",Pdu) ->
+    #req_extension_state{extension=get_pdu_var("Extension",Pdu),
+			 context=get_pdu_var("Context",Pdu)};
+
+parse_action("GetVar",Pdu) ->
+    #req_get_var{channel=get_pdu_var("Channel",Pdu),
+		 var=get_pdu_var("Var",Pdu)};
+
+parse_action("Hangup",Pdu) ->
+    #req_hangup{channel=get_pdu_var("Channel",Pdu)};
+
+parse_action("IAXNetStats",_Pdu) ->
+    #req_iax_netstats{};
+
+parse_action("IAXPeers",_Pdu) ->
+    #req_iax_peers{};
+
+parse_action("ListCommands",_Pdu) ->
+    #req_list_commands{};
+
+parse_action("Login",Pdu) ->
+    #req_login{user=get_pdu_var("User",Pdu),
+	       secret=get_pdu_var("Secret",Pdu)};
+
+parse_action("Logoff",_Pdu) ->
+    #req_logoff{};
+
+parse_action("MailboxCount",Pdu) ->
+    #req_mailbox_count{mailbox=get_pdu_var("Mailbox",Pdu),
+		       new=get_pdu_var("NewMessages",Pdu),
+		       old=get_pdu_var("OldMessages",Pdu)};
+
+parse_action("MailboxStatus",Pdu) ->
+    #req_mailbox_status{mailbox=get_pdu_var("Mailbox",Pdu),
+			waiting=get_pdu_var("Waiting",Pdu)};
+
+parse_action("Monitor",Pdu) ->
+    #req_monitor{channel=get_pdu_var("Channel",Pdu),
+		 file=get_pdu_var("File",Pdu),
+		 format=get_pdu_var("Format",Pdu),
+		 mix=get_pdu_var("Mix",Pdu)};
+
+parse_action("Originate",Pdu) ->
+    #req_originate{channel=get_pdu_var("Channel",Pdu)};
+
+parse_action("ParkedCalls",_Pdu) ->
+    #req_parked_calls{};
+
+parse_action("Ping",_Pdu) ->
+    #req_ping{};
+
+parse_action("QueueAdd",Pdu) ->
+    #req_queue_add{interface=get_pdu_var("Interface",Pdu),
+		   queue=get_pdu_var("Queue",Pdu),
+		   penalty=get_pdu_var("Penalty",Pdu),
+		   pause=get_pdu_var("Pause",Pdu)};
+
+parse_action("QueuePause",Pdu) ->
+    #req_queue_pause{interface=get_pdu_var("Interface",Pdu),
+		     queue=get_pdu_var("Queue",Pdu),
+		     penalty=get_pdu_var("Penalty",Pdu),
+		     pause=get_pdu_var("Pause",Pdu)};
+
+parse_action("QueueRemoveInterface",Pdu) ->
+    #req_queue_remove{interface=get_pdu_var("Interface",Pdu),
+		      queue=get_pdu_var("Queue",Pdu)};
+
+parse_action("Queues",_Pdu) ->
+    #req_queues{};
+
+parse_action("QueueStatus",_Pdu) ->
+    #req_queue_status{};
+
+parse_action("Redirect",Pdu) ->
+    #req_redirect{channel=get_pdu_var("Channel",Pdu),
+		  extrachannel=get_pdu_var("ExtraChannel",Pdu),
+		  exten=get_pdu_var("Exten",Pdu),
+		  context=get_pdu_var("",Pdu),
+		  priority=get_pdu_var("",Pdu)};
+
+parse_action("set_cdr_user_field",Pdu) ->
+    #req_set_cdr_user_field{channel=get_pdu_var("Channel",Pdu),
+			    userfield=get_pdu_var("UserField",Pdu),
+			    append=get_pdu_var("Append",Pdu)};
+
+parse_action("SetVar",Pdu) ->
+    #req_set_var{channel=get_pdu_var("Channel",Pdu),
+		 variable=get_pdu_var("Variable",Pdu),
+		 value=get_pdu_var("Value",Pdu)};
+
+parse_action("SIPshowpeer",Pdu) ->
+    #req_sip_showpeer{peer=get_pdu_var("Peer",Pdu)};
+
+parse_action("SIPpeers",_Pdu) ->
+    #req_sip_peers{};
+
+parse_action("Status",Pdu) ->
+    #req_status{channel=get_pdu_var("Channel",Pdu)};
+
+parse_action("StopMonitor",Pdu) ->
+    #req_stop_monitor{channel=get_pdu_var("Channel",Pdu)};
+
+parse_action("ZapDialOffhook",Pdu) ->
+    #req_zap_dial_offhook{channel=get_pdu_var("Channel",Pdu),
+			  number=get_pdu_var("Number",Pdu)};
+
+parse_action("ZapDndOff",Pdu) ->
+    #req_zap_dnd_off{channel=get_pdu_var("Channel",Pdu)};
+
+parse_action("ZapDndOn",Pdu) ->
+    #req_zap_dnd_on{channel=get_pdu_var("Channel",Pdu)};
+
+parse_action("ZapHangup",Pdu) ->
+    #req_zap_hangup{channel=get_pdu_var("Channel",Pdu)};
+
+parse_action("ZapShowChannels",_Pdu) ->
+    #req_zap_show_channels{};
+
+parse_action("ZapTransfer",_Pdu) ->
+    #req_zap_transfer{}.
 
 %%--------------------------------------------------------------------
 %% @spec parse(Data::string()) -> {[Pdu::pdu()],Cont::string()}
@@ -309,161 +497,6 @@ pack_l({L,V}) when is_list(V) ->
     [list_to_binary(L),<<": ">>,list_to_binary(V),<<"\r\n">>].
 
 
-parse_action("AbsoluteTimeout",Pdu) ->
-    #absolute_timeout{channel=get_pdu_var("Channel",Pdu),
-		      timeout=get_pdu_var("Timeout",Pdu)};
-parse_action("AgentCallbackLogin",Pdu) ->
-    #agent_callback_login{agent=get_pdu_var("Agent",Pdu),
-			  exten=get_pdu_var("Exten",Pdu),
-			  context=get_pdu_var("Context",Pdu),
-			  ackCall=get_pdu_var("AckCall",Pdu),
-			  wrapUpTime=get_pdu_var("WrapUpTime",Pdu)};
-parse_action("AgentLogoff",Pdu) ->
-    #agent_logoff{agent=get_pdu_var("Agent",Pdu),
-		  soft=get_pdu_var("Soft",Pdu)};
-
-parse_action("Agents",_Pdu) ->
-    #agents{};
-
-parse_action("ChangeMonitor",Pdu) ->
-    #change_monitor{channel=get_pdu_var("Channel",Pdu),
-		    file=get_pdu_var("File",Pdu)};
-
-parse_action("Command",Pdu) ->
-    #command{command=get_pdu_var("Command",Pdu)};
-
-parse_action("DBGet",Pdu) ->
-    #db_get{family=get_pdu_var("Family",Pdu),
-	    key=get_pdu_var("Key",Pdu)};
-
-parse_action("DBPut",Pdu) ->
-    #db_put{family=get_pdu_var("Family",Pdu),
-	    key=get_pdu_var("Key",Pdu),
-	    value=get_pdu_var("Value",Pdu)};
-
-parse_action("Events",Pdu) ->
-    #events{eventMask=get_pdu_var("EventMask",Pdu)};
-
-parse_action("ExtensionState",Pdu) ->
-    #extension_state{extension=get_pdu_var("Extension",Pdu),
-		     context=get_pdu_var("Context",Pdu)};
-
-parse_action("GetVar",Pdu) ->
-    #get_var{channel=get_pdu_var("Channel",Pdu),
-	     var=get_pdu_var("Var",Pdu)};
-
-parse_action("Hangup",Pdu) ->
-    #hangup{channel=get_pdu_var("Channel",Pdu)};
-
-parse_action("IAXNetStats",_Pdu) ->
-    #iax_netstats{};
-
-parse_action("IAXPeers",_Pdu) ->
-    #iax_peers{};
-
-parse_action("ListCommands",_Pdu) ->
-    #list_commands{};
-
-parse_action("Login",Pdu) ->
-    #login{user=get_pdu_var("User",Pdu),
-	   secret=get_pdu_var("Secret",Pdu)};
-
-parse_action("Logoff",_Pdu) ->
-    #logoff{};
-
-parse_action("MailboxCount",Pdu) ->
-    #mailboxcount{mailbox=get_pdu_var("Mailbix",Pdu)};
-
-parse_action("MailboxStatus",Pdu) ->
-    #mailbox_status{mailbox=get_pdu_var("Mailbox",Pdu)};
-
-parse_action("Monitor",Pdu) ->
-    #monitor{channel=get_pdu_var("Channel",Pdu),
-	     file=get_pdu_var("File",Pdu),
-	     format=get_pdu_var("Format",Pdu),
-	     mix=get_pdu_var("Mix",Pdu)};
-
-parse_action("Originate",Pdu) ->
-    #originate{channel=get_pdu_var("Channel",Pdu)};
-
-parse_action("ParkedCalls",_Pdu) ->
-    #parked_calls{};
-
-parse_action("Ping",_Pdu) ->
-    #ping{};
-
-parse_action("QueueAdd",Pdu) ->
-    #queue_add{interface=get_pdu_var("Interface",Pdu),
-	       queue=get_pdu_var("Queue",Pdu),
-	       penalty=get_pdu_var("Penalty",Pdu),
-	       pause=get_pdu_var("Pause",Pdu)};
-
-parse_action("QueuePause",Pdu) ->
-    #queue_pause{interface=get_pdu_var("Interface",Pdu),
-		 queue=get_pdu_var("Queue",Pdu),
-		 penalty=get_pdu_var("Penalty",Pdu),
-		 pause=get_pdu_var("Pause",Pdu)};
-
-parse_action("QueueRemoveInterface",Pdu) ->
-    #queue_remove{interface=get_pdu_var("Interface",Pdu),
-		  queue=get_pdu_var("Queue",Pdu)};
-
-parse_action("Queues",_Pdu) ->
-    #queues{};
-
-parse_action("QueueStatus",_Pdu) ->
-    #queue_status{};
-
-parse_action("Redirect",Pdu) ->
-    #redirect{channel=get_pdu_var("Channel",Pdu),
-	      extrachannel=get_pdu_var("ExtraChannel",Pdu),
-	      exten=get_pdu_var("Exten",Pdu),
-	      context=get_pdu_var("",Pdu),
-	      priority=get_pdu_var("",Pdu)};
-
-parse_action("set_cdr_user_field",Pdu) ->
-    #set_cdr_user_field{channel=get_pdu_var("Channel",Pdu),
-			userfield=get_pdu_var("UserField",Pdu),
-			append=get_pdu_var("Append",Pdu)};
-
-parse_action("SetVar",Pdu) ->
-    #set_var{channel=get_pdu_var("Channel",Pdu),
-	     variable=get_pdu_var("Variable",Pdu),
-	     value=get_pdu_var("Value",Pdu)};
-
-parse_action("SIPshowpeer",Pdu) ->
-    #sip_showpeer{peer=get_pdu_var("Peer",Pdu)};
-
-parse_action("SIPpeers",_Pdu) ->
-    #sip_peers{};
-
-parse_action("Status",Pdu) ->
-    #status{channel=get_pdu_var("Channel",Pdu)};
-
-parse_action("StopMonitor",Pdu) ->
-    #stop_monitor{channel=get_pdu_var("Channel",Pdu)};
-
-parse_action("ZapDialOffhook",Pdu) ->
-    #zap_dial_offhook{channel=get_pdu_var("Channel",Pdu),
-		      number=get_pdu_var("Number",Pdu)};
-
-parse_action("ZapDndOff",Pdu) ->
-    #zap_dnd_off{channel=get_pdu_var("Channel",Pdu)};
-
-parse_action("ZapDndOn",Pdu) ->
-    #zap_dnd_on{channel=get_pdu_var("Channel",Pdu)};
-
-parse_action("ZapHangup",Pdu) ->
-    #zap_hangup{channel=get_pdu_var("Channel",Pdu)};
-
-parse_action("ZapShowChannels",_Pdu) ->
-    #zap_show_channels{};
-
-parse_action("ZapTransfer",_Pdu) ->
-    #zap_transfer{}.
-
-parse_alarm(Alarm,Pdu) ->
-    ok.
 
 parse_event(Alarm,Pdu) ->
     ok.

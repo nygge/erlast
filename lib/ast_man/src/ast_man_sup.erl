@@ -61,7 +61,8 @@ init([]) ->
 	      permanent,2000,worker,[ast_man_events]},
     AstMan = {ast_man,{ast_manager,start_link,[]},
 	      permanent,2000,worker,[ast_manager]},
-    AstDrv = {ast_drv,{ast_man_drv,start_link,[]},
+    AstDrv = {ast_drv,{ast_man_drv,start_link,[{127,0,0,1},
+					       5038,"anders","secret"]},
 	      permanent,2000,worker,[ast_man_drv]},
     {ok,{{one_for_all,100,1000}, [AstDrv,AstEvt,AstMan]}}.
 

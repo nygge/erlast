@@ -25,7 +25,7 @@
 -behaviour(gen_server).
 
 %% API
--export([start_link/4,
+-export([start_link/4,start_link/5,
 	 send/1
 	]).
 
@@ -53,8 +53,11 @@
 start_link(IPaddr,Port,User,Passwd) ->
     gen_server:start_link({local, ?SERVER}, ?MODULE,
 			  [IPaddr,Port,User,Passwd], []).
+%%     gen_server:start_link({local, ?SERVER}, ?MODULE,
+%% 			  [IPaddr,Port,User,Passwd], [{debug,[trace]}]).
 start_link(Name,IPaddr,Port,User,Passwd) ->
     gen_server:start_link(Name, ?MODULE, [IPaddr,Port,User,Passwd], []).
+%%    gen_server:start_link(Name, ?MODULE, [IPaddr,Port,User,Passwd], [{debug,[trace]}]).
 
 send(Request) ->
     gen_server:call(?SERVER,{api,Request}).
@@ -157,6 +160,7 @@ parse(Data) ->
 	{nothing,Rest} ->
 	    Rest;
 	{Msg,More} ->
+%%	    io:format("sending to manager: ~w~n",[lists:flatten(Msg)]),
 	    ast_manager:new_pdu([{"EventTime",erlang:now()}|Msg]),
 	    parse(More)
     end.
