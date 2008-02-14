@@ -501,7 +501,7 @@ code_change(_OldVsn, State, _Extra) ->
 %%% Internal functions
 %%--------------------------------------------------------------------
 login(User,Secret) ->
-    Pdu=ast_ami_pdu:make_pdu(#req_login{user=User,secret=Secret}),
+    Pdu=ast_ami_pdu:encode(#req_login{user=User,secret=Secret}),
     ast_ami_drv:send(Pdu).
 
 
